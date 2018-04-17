@@ -12,7 +12,7 @@ go-assertions requires OS X.
 package main
 
 import (
-  	"encoding/json"
+    "encoding/json"
     "log"
     
     "github.com/caseymrm/go-assertions"
