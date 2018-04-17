@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-    a := GetAssertions()
+    a := assertions.GetAssertions()
     b, _ := json.MarshalIndent(a, "", "  ")
     log.Printf("%s\n", b)
 }
