@@ -63,20 +63,3 @@ void get_system_assertions() {
   free(assertionValues);
   doneAssertions();
 }
-
-static void logAssertionsCallBack(CFMachPortRef port __unused,
-                                  void *msg __unused, CFIndex size __unused,
-                                  void *info __unused) {
-  get_system_assertions();
-}
-
-#define kIOPMAssertionsChangedNotifyString                                     \
-  "com.apple.system.powermanagement.assertions"
-#define kIOPMAssertionTimedOutNotifyString                                     \
-  "com.apple.system.powermanagement.assertions.timeout"
-#define kIOPMAssertionsAnyChangedNotifyString                                  \
-  "com.apple.system.powermanagement.assertions.anychange"
-enum {
-    kIOPMNotifyRegister = 0x1,
-    kIOPMNotifyDeRegister = 0x2
-};
