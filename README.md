@@ -13,7 +13,9 @@ package main
 
 import (
   	"encoding/json"
-	"log"
+    "log"
+    
+    "github.com/caseymrm/go-assertions"
 )
 
 func main() {
