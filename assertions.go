@@ -10,6 +10,7 @@ void get_pid_assertions();
 */
 import "C"
 import (
+	"log"
 	"sync"
 )
 
@@ -70,6 +71,9 @@ func pidAssertion(pid int, keyCStr *C.char, val int, nameCStr *C.char, timedoutC
 	key := C.GoString(keyCStr)
 	name := C.GoString(nameCStr)
 	timedout := C.GoString(timedoutCStr)
+	if timedout != "" {
+		log.Printf("Getting pids timed out: %s\n", timedout)
+	}
 	pidAssertions[key] = PidAssertion{
 		PID:  pid,
 		Name: name,
