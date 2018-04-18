@@ -22,7 +22,7 @@ func GetAssertions() map[string]int {
 }
 
 // GetPIDAssertions returns a map of assertion keys to it's value
-func GetPIDAssertions() map[string]PidAssertion {
+func GetPIDAssertions() map[string][]PidAssertion {
 	C.get_pid_assertions()
 	<-pidDone
 	return pidAssertions
@@ -39,7 +39,7 @@ var systemAssertions map[string]int
 var systemDone = make(chan bool, 1)
 
 var pidMutex = &sync.Mutex{}
-var pidAssertions map[string]PidAssertion
+var pidAssertions map[string][]PidAssertion
 var pidDone = make(chan bool, 1)
 
 //export startSystemAssertions
@@ -63,7 +63,7 @@ func doneSystemAssertions() {
 //export startPidAssertions
 func startPidAssertions() {
 	pidMutex.Lock()
-	pidAssertions = make(map[string]PidAssertion)
+	pidAssertions = make(map[string][]PidAssertion)
 }
 
 //export pidAssertion
@@ -74,10 +74,10 @@ func pidAssertion(pid int, keyCStr *C.char, val int, nameCStr *C.char, timedoutC
 	if timedout != "" {
 		log.Printf("Getting pids timed out: %s\n", timedout)
 	}
-	pidAssertions[key] = PidAssertion{
+	pidAssertions[key] = append(pidAssertions[key], PidAssertion{
 		PID:  pid,
 		Name: name,
-	}
+	})
 }
 
 //export donePidAssertions
