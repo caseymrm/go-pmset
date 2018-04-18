@@ -13,3 +13,12 @@ func TestSystemAssertions(t *testing.T) {
 		t.Errorf("%s\n", b)
 	}
 }
+
+func TestPIDAssertions(t *testing.T) {
+	a := GetPIDAssertions()
+	b, _ := json.MarshalIndent(a, "", "  ")
+	_, ok := a["PreventUserIdleDisplaySleep"]
+	if !ok {
+		t.Errorf("%s\n", b)
+	}
+}
