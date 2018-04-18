@@ -83,61 +83,62 @@ void get_pid_assertions() {
     return;
   }
 
-  if (assertions_info) {
-    CFNumberRef *pids = NULL;
-    CFArrayRef *assertions = NULL;
-    int process_count;
-    int i;
-
-    process_count = CFDictionaryGetCount(assertions_info);
-    pids = malloc(sizeof(CFNumberRef) * process_count);
-    assertions = malloc(sizeof(CFArrayRef *) * process_count);
-    CFDictionaryGetKeysAndValues(assertions_info, (const void **)pids,
-                                 (const void **)assertions);
-
-    for (i = 0; i < process_count; i++) {
-      int the_pid;
-      int j;
-
-      CFNumberGetValue(pids[i], kCFNumberIntType, &the_pid);
-
-      for (j = 0; j < CFArrayGetCount(assertions[i]); j++) {
-        CFDictionaryRef tmp_dict;
-        CFStringRef tmp_type;
-        CFNumberRef tmp_val;
-        CFStringRef the_name;
-        char str_buf[40];
-        char name_buf[129];
-        int val;
-        bool timed_out = false;
-
-        tmp_dict = CFArrayGetValueAtIndex(assertions[i], j);
-        if (!tmp_dict) {
-          return;
-        }
-        tmp_type = CFDictionaryGetValue(tmp_dict, kIOPMAssertionTypeKey);
-        tmp_val = CFDictionaryGetValue(tmp_dict, kIOPMAssertionLevelKey);
-        the_name = CFDictionaryGetValue(tmp_dict, kIOPMAssertionNameKey);
-        timed_out =
-            CFDictionaryGetValue(tmp_dict, kIOPMAssertionTimedOutDateKey);
-        if (!tmp_type || !tmp_val) {
-          return;
-        }
-        CFStringGetCString(tmp_type, str_buf, 40, kCFStringEncodingMacRoman);
-        CFNumberGetValue(tmp_val, kCFNumberIntType, &val);
-
-        if (the_name) {
-          CFStringGetCString(the_name, name_buf, 129,
-                             kCFStringEncodingMacRoman);
-        }
-
-        pidAssertion(the_pid, str_buf, val,
-                     the_name ? name_buf : "zilch-o (bug!)",
-                     timed_out ? "timed out :(" : "");
-      }
-    }
-  } else {
+  if (!assertions_info) {
     printf("No Assertions.\n");
+    donePidAssertions();
+    return;
+  }
+
+  CFNumberRef *pids = NULL;
+  CFArrayRef *assertions = NULL;
+  int process_count;
+  int i;
+
+  process_count = CFDictionaryGetCount(assertions_info);
+  pids = malloc(sizeof(CFNumberRef) * process_count);
+  assertions = malloc(sizeof(CFArrayRef *) * process_count);
+  CFDictionaryGetKeysAndValues(assertions_info, (const void **)pids,
+                               (const void **)assertions);
+
+  for (i = 0; i < process_count; i++) {
+    int the_pid;
+    int j;
+
+    CFNumberGetValue(pids[i], kCFNumberIntType, &the_pid);
+
+    for (j = 0; j < CFArrayGetCount(assertions[i]); j++) {
+      CFDictionaryRef tmp_dict;
+      CFStringRef tmp_type;
+      CFNumberRef tmp_val;
+      CFStringRef the_name;
+      char str_buf[40];
+      char name_buf[129];
+      int val;
+      bool timed_out = false;
+
+      tmp_dict = CFArrayGetValueAtIndex(assertions[i], j);
+      if (!tmp_dict) {
+        donePidAssertions();
+        return;
+      }
+      tmp_type = CFDictionaryGetValue(tmp_dict, kIOPMAssertionTypeKey);
+      tmp_val = CFDictionaryGetValue(tmp_dict, kIOPMAssertionLevelKey);
+      the_name = CFDictionaryGetValue(tmp_dict, kIOPMAssertionNameKey);
+      timed_out = CFDictionaryGetValue(tmp_dict, kIOPMAssertionTimedOutDateKey);
+      if (!tmp_type || !tmp_val) {
+        return;
+      }
+      CFStringGetCString(tmp_type, str_buf, 40, kCFStringEncodingMacRoman);
+      CFNumberGetValue(tmp_val, kCFNumberIntType, &val);
+
+      if (the_name) {
+        CFStringGetCString(the_name, name_buf, 129, kCFStringEncodingMacRoman);
+      }
+
+      pidAssertion(the_pid, str_buf, val,
+                   the_name ? name_buf : "zilch-o (bug!)",
+                   timed_out ? "timed out :(" : "");
+    }
   }
   if (assertions_info)
     CFRelease(assertions_info);
