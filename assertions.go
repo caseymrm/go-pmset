@@ -1,4 +1,4 @@
-package assertions
+package main
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -6,6 +6,7 @@ package assertions
 
 void get_system_assertions();
 void get_pid_assertions();
+void subscribe_assertions();
 
 */
 import "C"
@@ -26,6 +27,11 @@ func GetPIDAssertions() map[string][]PidAssertion {
 	C.get_pid_assertions()
 	<-pidDone
 	return pidAssertions
+}
+
+// SubscribeAssertionChanges hooks up a channel
+func SubscribeAssertionChanges() {
+	C.subscribe_assertions()
 }
 
 // PidAssertion represents one process that has an assertion
@@ -84,4 +90,8 @@ func pidAssertion(pid int, keyCStr *C.char, val int, nameCStr *C.char, timedoutC
 func donePidAssertions() {
 	pidMutex.Unlock()
 	pidDone <- true
+}
+
+func main() {
+	SubscribeAssertionChanges()
 }

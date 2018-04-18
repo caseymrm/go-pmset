@@ -21,6 +21,9 @@
 #include <sysexits.h>
 #include <unistd.h>
 
+#include "IOPMLibPrivate.h"
+#include "isacf.h"
+
 void startSystemAssertions();
 void systemAssertion(const char *, int);
 void doneSystemAssertions();
@@ -144,4 +147,127 @@ void get_pid_assertions() {
     CFRelease(assertions_info);
 
   donePidAssertions();
+}
+
+static void show_assertion_activity(bool init_only)
+{
+    int                 num;
+    CFIndex             cnt = 0;
+    char                str[200];
+    bool                of;
+    uint64_t            num64;
+    CFDateRef           time_cf = NULL;
+    static int          lines = 0;
+    CFArrayRef          log = NULL;
+    CFNumberRef         num_cf = NULL;
+    CFStringRef         str_cf = NULL;
+    static uint32_t     refCnt = UINT_MAX;
+    CFDictionaryRef     entry;
+    IOReturn            rc;
+    pid_t               beneficiary;
+
+    rc = IOPMCopyAssertionActivityUpdate(&log, &of, &refCnt);
+    if ((rc  != kIOReturnSuccess) && (rc != kIOReturnNotFound)) {
+        printf("Showing all currently held IOKit power assertions\n");
+        return;
+    }
+    if (!log) {
+        return;
+    }
+
+    if (init_only) goto exit;
+
+    if (of) {
+        printf("Showing all currently held IOKit power assertions\n");
+    }
+    cnt = isA_CFArray(log) ? CFArrayGetCount(log) : 0;
+    for (int i=0; i < cnt; i++) {
+        entry = CFArrayGetValueAtIndex(log, i);
+        if (entry == NULL) continue;
+
+        if ((lines++ % 30) == 0) {
+            printf("\n%-17s%-12s%-30s%-20s%-20s%-50s\n",
+                   "Time","Action", "Type", "PID(Causing PID)", "ID", "Name");
+            printf("%-17s%-12s%-30s%-20s%-20s%-50s\n",
+                   "====","======", "====", "================", "==", "====");
+        }
+
+        time_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityTime);
+        /*
+        if (time_cf) 
+            print_compact_date(CFDateGetAbsoluteTime(time_cf), false);
+            */
+        printf("   ");
+
+        str_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityAction);
+        str[0]=0;
+        if (isA_CFString(str_cf))
+            CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
+        printf("%-12s", str);
+
+        str_cf = CFDictionaryGetValue(entry, kIOPMAssertionTypeKey);
+        str[0]=0;
+        if (isA_CFString(str_cf))
+            CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
+        printf("%-30s", str);
+
+        num_cf = CFDictionaryGetValue(entry, kIOPMAssertionPIDKey);
+        if (isA_CFNumber(num_cf)) {
+            CFNumberGetValue(num_cf, kCFNumberIntType, &num);
+
+            num_cf = CFDictionaryGetValue(entry, kIOPMAssertionOnBehalfOfPID);
+            if (isA_CFNumber(num_cf)) {
+                CFNumberGetValue(num_cf, kCFNumberIntType, &beneficiary);
+                str[0] = 0;
+                sprintf(str,"%d(%d)", num, beneficiary); 
+                printf("%-20s", str);
+            }
+            else
+                printf("%-20d", num);
+        }
+
+        num_cf = CFDictionaryGetValue(entry, kIOPMAssertionGlobalUniqueIDKey);
+        if (isA_CFNumber(num_cf)) {
+            CFNumberGetValue(num_cf, kCFNumberSInt64Type, &num64);
+            printf("0x%-18llx", num64);
+        }
+
+        str_cf = CFDictionaryGetValue(entry, kIOPMAssertionNameKey);
+        str[0]=0;
+        if (isA_CFString(str_cf)) {
+            CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
+            printf("%-50s", str);
+        }
+
+
+        printf("\n");
+    }
+
+exit:
+
+    if (cnt) CFRelease(log);
+
+}
+
+void subscribe_assertions() {
+  int token;
+  int notify_status;
+
+  IOPMAssertionNotify(kIOPMAssertionsAnyChangedNotifyString,
+                      kIOPMNotifyRegister);
+  IOPMSetAssertionActivityLog(true);
+  notify_status =
+      notify_register_dispatch(kIOPMAssertionsAnyChangedNotifyString, &token,
+                               dispatch_get_main_queue(), ^(int t) {
+                                 printf("Notify %d\n", t);
+                                 show_assertion_activity(false);
+                               });
+
+  if (NOTIFY_STATUS_OK != notify_status) {
+    printf("Could not get notification for %s. Exiting.\n",
+           kIOPMAssertionsAnyChangedNotifyString);
+    return;
+  }
+
+  dispatch_main();
 }

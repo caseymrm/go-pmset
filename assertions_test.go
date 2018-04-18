@@ -1,4 +1,4 @@
-package assertions
+package main
 
 import (
 	"encoding/json"
@@ -21,4 +21,8 @@ func TestPIDAssertions(t *testing.T) {
 	if !ok {
 		t.Errorf("%s\n", b)
 	}
+}
+
+func TestAssertionChanges(t *testing.T) {
+	SubscribeAssertionChanges()
 }
