@@ -27,7 +27,8 @@ func TestAssertionChanges(t *testing.T) {
 	channel := make(chan AssertionChange)
 	go func() {
 		for change := range channel {
-			t.Errorf("Change: %+v", change)
+			b, _ := json.MarshalIndent(change, "", "  ")
+			t.Errorf("%s\n", b)
 		}
 	}()
 	SubscribeAssertionChangesAndRun(channel)
