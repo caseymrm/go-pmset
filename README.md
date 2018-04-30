@@ -78,32 +78,33 @@ func main() {
 
 ```
 2018/04/17 16:11:23 {
-		  "PreventUserIdleDisplaySleep": [
-		    {
-		      "PID": 47784,
-		      "Name": "com.apple.WebCore: HTMLMediaElement playback"
-		    }
-		  ],
-		  "PreventUserIdleSystemSleep": [
-		    {
-		      "PID": 180,
-		      "Name": "com.apple.audio.AppleUSBAudioEngine:C-Media Electronics Inc.:USB Audio Device:14131000:2,1.context.preventuseridlesleep"
-		    },
-		    {
-		      "PID": 180,
-		      "Name": "com.apple.audio.AppleUSBAudioEngine:C-Media Electronics Inc.:USB Audio Device:14131000:2,1.context.preventuseridlesleep"
-		    }
-		  ],
-		  "UserIsActive": [
-		    {
-		      "PID": 114,
-		      "Name": "com.apple.iohideventsystem.queue.tickle.4294978958.17"
-		    }
-		  ]
-		}
+  "PreventUserIdleDisplaySleep": [
+    {
+      "PID": 47784,
+      "Name": "com.apple.WebCore: HTMLMediaElement playback"
+    }
+  ],
+  "PreventUserIdleSystemSleep": [
+    {
+      "PID": 180,
+      "Name": "com.apple.audio.AppleUSBAudioEngine:C-Media Electronics Inc.:USB Audio Device:14131000:2,1.context.preventuseridlesleep"
+    },
+    {
+      "PID": 180,
+      "Name": "com.apple.audio.AppleUSBAudioEngine:C-Media Electronics Inc.:USB Audio Device:14131000:2,1.context.preventuseridlesleep"
+    }
+  ],
+  "UserIsActive": [
+    {
+      "PID": 114,
+      "Name": "com.apple.iohideventsystem.queue.tickle.4294978958.17"
+    }
+  ]
+}
 ```
 
 
+### SubscribeAssertionChanges()
 ### SubscribeAssertionChangesAndRun()
 
 ```go
