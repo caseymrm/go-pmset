@@ -7,6 +7,7 @@ package assertions
 void get_system_assertions();
 void get_pid_assertions();
 void subscribe_assertions();
+void run_subscribed_assertions();
 
 */
 import "C"
@@ -42,7 +43,13 @@ func GetPIDAssertions() map[string][]PidAssertion {
 	return pidAssertions
 }
 
-// SubscribeAssertionChanges does not return, changes come through the supplied channel
+// SubscribeAssertionChangesAndRun does not return, changes come through the supplied channel
+func SubscribeAssertionChangesAndRun(channel chan<- AssertionChange) {
+	SubscribeAssertionChanges(channel)
+	C.run_subscribed_assertions()
+}
+
+// SubscribeAssertionChanges return, changes come through the supplied channel once dispatch_main or nsapplication is run
 func SubscribeAssertionChanges(channel chan<- AssertionChange) {
 	subscriptionMutex.Lock()
 	defer subscriptionMutex.Unlock()

@@ -30,5 +30,5 @@ func TestAssertionChanges(t *testing.T) {
 			t.Errorf("Change: %+v", change)
 		}
 	}()
-	SubscribeAssertionChanges(channel)
+	SubscribeAssertionChangesAndRun(channel)
 }

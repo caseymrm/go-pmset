@@ -156,75 +156,76 @@ void get_pid_assertions() {
 }
 
 static void get_new_activity() {
-    int                 num;
-    CFIndex             cnt = 0;
-    char                str[200];
-    bool                of;
-    uint64_t            num64;
-    CFArrayRef          log = NULL;
-    CFNumberRef         num_cf = NULL;
-    CFStringRef         str_cf = NULL;
-    static uint32_t     refCnt = UINT_MAX;
-    CFDictionaryRef     entry;
-    IOReturn            rc;
-    pid_t               beneficiary;
+  int num;
+  CFIndex cnt = 0;
+  char str[200];
+  bool of;
+  uint64_t num64;
+  CFArrayRef log = NULL;
+  CFNumberRef num_cf = NULL;
+  CFStringRef str_cf = NULL;
+  static uint32_t refCnt = UINT_MAX;
+  CFDictionaryRef entry;
+  IOReturn rc;
+  pid_t beneficiary;
 
-    rc = IOPMCopyAssertionActivityUpdate(&log, &of, &refCnt);
-    if ((rc  != kIOReturnSuccess) && (rc != kIOReturnNotFound)) {
-        printf("Showing all currently held IOKit power assertions\n");
-        return;
+  rc = IOPMCopyAssertionActivityUpdate(&log, &of, &refCnt);
+  if ((rc != kIOReturnSuccess) && (rc != kIOReturnNotFound)) {
+    // TODO: some kind of error
+    return;
+  }
+  if (!log) {
+    return;
+  }
+  if (of) {
+    // TODO: indicate overflow, may have missed some
+  }
+  cnt = isA_CFArray(log) ? CFArrayGetCount(log) : 0;
+  for (int i = 0; i < cnt; i++) {
+    entry = CFArrayGetValueAtIndex(log, i);
+    if (entry == NULL)
+      continue;
+
+    str_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityAction);
+    str[0] = 0;
+    if (isA_CFString(str_cf)) {
+      CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
+      subscriptionAction(str);
     }
-    if (!log) {
-        return;
+
+    str_cf = CFDictionaryGetValue(entry, kIOPMAssertionTypeKey);
+    str[0] = 0;
+    if (isA_CFString(str_cf)) {
+      CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
+      subscriptionType(str);
     }
-    if (of) {
-        printf("Showing all currently held IOKit power assertions\n");
+
+    num_cf = CFDictionaryGetValue(entry, kIOPMAssertionPIDKey);
+    if (isA_CFNumber(num_cf)) {
+      CFNumberGetValue(num_cf, kCFNumberIntType, &num);
+      subscriptionPid(num);
+
+      num_cf = CFDictionaryGetValue(entry, kIOPMAssertionOnBehalfOfPID);
+      if (isA_CFNumber(num_cf)) {
+        CFNumberGetValue(num_cf, kCFNumberIntType, &beneficiary);
+        // TODO: expose beneficiary to go
+      }
     }
-    cnt = isA_CFArray(log) ? CFArrayGetCount(log) : 0;
-    for (int i=0; i < cnt; i++) {
-        entry = CFArrayGetValueAtIndex(log, i);
-        if (entry == NULL) continue;
 
-        str_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityAction);
-        str[0]=0;
-        if (isA_CFString(str_cf)) {
-            CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
-            subscriptionAction(str);
-        }
-
-        str_cf = CFDictionaryGetValue(entry, kIOPMAssertionTypeKey);
-        str[0]=0;
-        if (isA_CFString(str_cf)) {
-            CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
-            subscriptionType(str);
-        }
-
-        num_cf = CFDictionaryGetValue(entry, kIOPMAssertionPIDKey);
-        if (isA_CFNumber(num_cf)) {
-            CFNumberGetValue(num_cf, kCFNumberIntType, &num);
-            subscriptionPid(num);
-
-            num_cf = CFDictionaryGetValue(entry, kIOPMAssertionOnBehalfOfPID);
-            if (isA_CFNumber(num_cf)) {
-                CFNumberGetValue(num_cf, kCFNumberIntType, &beneficiary);
-                // TODO: expose beneficiary to go
-            }
-        }
-
-        str_cf = CFDictionaryGetValue(entry, kIOPMAssertionNameKey);
-        str[0]=0;
-        if (isA_CFString(str_cf)) {
-            CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
-            subscriptionProcessName(str);
-        }
-
-        assertionChangeReady();
+    str_cf = CFDictionaryGetValue(entry, kIOPMAssertionNameKey);
+    str[0] = 0;
+    if (isA_CFString(str_cf)) {
+      CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
+      subscriptionProcessName(str);
     }
+
+    assertionChangeReady();
+  }
 
 exit:
 
-    if (cnt) CFRelease(log);
-
+  if (cnt)
+    CFRelease(log);
 }
 
 void subscribe_assertions() {
@@ -245,6 +246,6 @@ void subscribe_assertions() {
            kIOPMAssertionsAnyChangedNotifyString);
     return;
   }
-
-  dispatch_main();
 }
+
+void run_subscribed_assertions() { dispatch_main(); }
