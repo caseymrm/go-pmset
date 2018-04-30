@@ -29,14 +29,14 @@ type AssertionChange struct {
 	Pid    PidAssertion
 }
 
-// GetAssertions returns a map of assertion keys to it's value
+// GetAssertions returns a map of assertion keys to values
 func GetAssertions() map[string]int {
 	C.get_system_assertions()
 	<-systemDone
 	return systemAssertions
 }
 
-// GetPIDAssertions returns a map of assertion keys to it's value
+// GetPIDAssertions returns a map of assertion keys to procceses holding those assertions
 func GetPIDAssertions() map[string][]PidAssertion {
 	C.get_pid_assertions()
 	<-pidDone
@@ -51,12 +51,9 @@ func SubscribeAssertionChangesAndRun(channel chan<- AssertionChange) {
 
 // SubscribeAssertionChanges return, changes come through the supplied channel once dispatch_main or nsapplication is run
 func SubscribeAssertionChanges(channel chan<- AssertionChange) {
-	subscriptionMutex.Lock()
-	defer subscriptionMutex.Unlock()
 	go func() {
 		for range subscriptionReady {
 			channel <- assertionChange
-			assertionChange = AssertionChange{}
 		}
 	}()
 	C.subscribe_assertions()
@@ -118,6 +115,12 @@ var subscriptionMutex = &sync.Mutex{}
 var assertionChange AssertionChange
 var subscriptionReady = make(chan bool, 1)
 
+//export assertionChangeStart
+func assertionChangeStart() {
+	subscriptionMutex.Lock()
+	assertionChange = AssertionChange{}
+}
+
 //export subscriptionAction
 func subscriptionAction(actionCStr *C.char) {
 	action := C.GoString(actionCStr)
@@ -144,4 +147,5 @@ func subscriptionProcessName(processNameCStr *C.char) {
 //export assertionChangeReady
 func assertionChangeReady() {
 	subscriptionReady <- true
+	subscriptionMutex.Unlock()
 }

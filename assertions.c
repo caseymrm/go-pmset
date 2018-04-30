@@ -32,6 +32,7 @@ void startPidAssertions();
 void pidAssertion(int, const char *, int, const char *, const char *);
 void donePidAssertions();
 
+void assertionChangeStart();
 void subscriptionAction(const char *);
 void subscriptionType(const char *);
 void subscriptionPid(int);
@@ -186,6 +187,7 @@ static void get_new_activity() {
     if (entry == NULL)
       continue;
 
+    assertionChangeStart();
     str_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityAction);
     str[0] = 0;
     if (isA_CFString(str_cf)) {
