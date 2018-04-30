@@ -1,4 +1,3 @@
-#include <CoreFoundation/CFDateFormatter.h>
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <IOKit/IOCFSerialize.h>
