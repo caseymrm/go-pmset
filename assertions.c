@@ -32,6 +32,12 @@ void startPidAssertions();
 void pidAssertion(int, const char *, int, const char *, const char *);
 void donePidAssertions();
 
+void subscriptionAction(const char *);
+void subscriptionType(const char *);
+void subscriptionPid(int);
+void subscriptionProcessName(const char *);
+void assertionChangeReady();
+
 void get_system_assertions() {
   startSystemAssertions();
 
@@ -149,15 +155,12 @@ void get_pid_assertions() {
   donePidAssertions();
 }
 
-static void show_assertion_activity(bool init_only)
-{
+static void get_new_activity() {
     int                 num;
     CFIndex             cnt = 0;
     char                str[200];
     bool                of;
     uint64_t            num64;
-    CFDateRef           time_cf = NULL;
-    static int          lines = 0;
     CFArrayRef          log = NULL;
     CFNumberRef         num_cf = NULL;
     CFStringRef         str_cf = NULL;
@@ -174,9 +177,6 @@ static void show_assertion_activity(bool init_only)
     if (!log) {
         return;
     }
-
-    if (init_only) goto exit;
-
     if (of) {
         printf("Showing all currently held IOKit power assertions\n");
     }
@@ -185,62 +185,40 @@ static void show_assertion_activity(bool init_only)
         entry = CFArrayGetValueAtIndex(log, i);
         if (entry == NULL) continue;
 
-        if ((lines++ % 30) == 0) {
-            printf("\n%-17s%-12s%-30s%-20s%-20s%-50s\n",
-                   "Time","Action", "Type", "PID(Causing PID)", "ID", "Name");
-            printf("%-17s%-12s%-30s%-20s%-20s%-50s\n",
-                   "====","======", "====", "================", "==", "====");
-        }
-
-        time_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityTime);
-        /*
-        if (time_cf) 
-            print_compact_date(CFDateGetAbsoluteTime(time_cf), false);
-            */
-        printf("   ");
-
         str_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityAction);
         str[0]=0;
-        if (isA_CFString(str_cf))
+        if (isA_CFString(str_cf)) {
             CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
-        printf("%-12s", str);
+            subscriptionAction(str);
+        }
 
         str_cf = CFDictionaryGetValue(entry, kIOPMAssertionTypeKey);
         str[0]=0;
-        if (isA_CFString(str_cf))
+        if (isA_CFString(str_cf)) {
             CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
-        printf("%-30s", str);
+            subscriptionType(str);
+        }
 
         num_cf = CFDictionaryGetValue(entry, kIOPMAssertionPIDKey);
         if (isA_CFNumber(num_cf)) {
             CFNumberGetValue(num_cf, kCFNumberIntType, &num);
+            subscriptionPid(num);
 
             num_cf = CFDictionaryGetValue(entry, kIOPMAssertionOnBehalfOfPID);
             if (isA_CFNumber(num_cf)) {
                 CFNumberGetValue(num_cf, kCFNumberIntType, &beneficiary);
-                str[0] = 0;
-                sprintf(str,"%d(%d)", num, beneficiary); 
-                printf("%-20s", str);
+                // TODO: expose beneficiary to go
             }
-            else
-                printf("%-20d", num);
-        }
-
-        num_cf = CFDictionaryGetValue(entry, kIOPMAssertionGlobalUniqueIDKey);
-        if (isA_CFNumber(num_cf)) {
-            CFNumberGetValue(num_cf, kCFNumberSInt64Type, &num64);
-            printf("0x%-18llx", num64);
         }
 
         str_cf = CFDictionaryGetValue(entry, kIOPMAssertionNameKey);
         str[0]=0;
         if (isA_CFString(str_cf)) {
             CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
-            printf("%-50s", str);
+            subscriptionProcessName(str);
         }
 
-
-        printf("\n");
+        assertionChangeReady();
     }
 
 exit:
@@ -259,8 +237,7 @@ void subscribe_assertions() {
   notify_status =
       notify_register_dispatch(kIOPMAssertionsAnyChangedNotifyString, &token,
                                dispatch_get_main_queue(), ^(int t) {
-                                 printf("Notify %d\n", t);
-                                 show_assertion_activity(false);
+                                 get_new_activity();
                                });
 
   if (NOTIFY_STATUS_OK != notify_status) {

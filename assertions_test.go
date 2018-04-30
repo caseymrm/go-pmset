@@ -1,4 +1,4 @@
-package main
+package assertions
 
 import (
 	"encoding/json"
@@ -24,5 +24,11 @@ func TestPIDAssertions(t *testing.T) {
 }
 
 func TestAssertionChanges(t *testing.T) {
-	SubscribeAssertionChanges()
+	channel := make(chan AssertionChange)
+	go func() {
+		for change := range channel {
+			t.Errorf("Change: %+v", change)
+		}
+	}()
+	SubscribeAssertionChanges(channel)
 }

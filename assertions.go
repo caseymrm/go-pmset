@@ -1,4 +1,4 @@
-package main
+package assertions
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -15,6 +15,19 @@ import (
 	"sync"
 )
 
+// PidAssertion represents one process that has an assertion
+type PidAssertion struct {
+	PID  int
+	Name string
+}
+
+// AssertionChange represents a process making a change to an assertion
+type AssertionChange struct {
+	Action string
+	Type   string
+	Pid    PidAssertion
+}
+
 // GetAssertions returns a map of assertion keys to it's value
 func GetAssertions() map[string]int {
 	C.get_system_assertions()
@@ -29,24 +42,22 @@ func GetPIDAssertions() map[string][]PidAssertion {
 	return pidAssertions
 }
 
-// SubscribeAssertionChanges hooks up a channel
-func SubscribeAssertionChanges() {
+// SubscribeAssertionChanges does not return, changes come through the supplied channel
+func SubscribeAssertionChanges(channel chan<- AssertionChange) {
+	subscriptionMutex.Lock()
+	defer subscriptionMutex.Unlock()
+	go func() {
+		for range subscriptionReady {
+			channel <- assertionChange
+			assertionChange = AssertionChange{}
+		}
+	}()
 	C.subscribe_assertions()
-}
-
-// PidAssertion represents one process that has an assertion
-type PidAssertion struct {
-	PID  int
-	Name string
 }
 
 var systemMutex = &sync.Mutex{}
 var systemAssertions map[string]int
 var systemDone = make(chan bool, 1)
-
-var pidMutex = &sync.Mutex{}
-var pidAssertions map[string][]PidAssertion
-var pidDone = make(chan bool, 1)
 
 //export startSystemAssertions
 func startSystemAssertions() {
@@ -65,6 +76,10 @@ func doneSystemAssertions() {
 	systemMutex.Unlock()
 	systemDone <- true
 }
+
+var pidMutex = &sync.Mutex{}
+var pidAssertions map[string][]PidAssertion
+var pidDone = make(chan bool, 1)
 
 //export startPidAssertions
 func startPidAssertions() {
@@ -92,6 +107,34 @@ func donePidAssertions() {
 	pidDone <- true
 }
 
-func main() {
-	SubscribeAssertionChanges()
+var subscriptionMutex = &sync.Mutex{}
+var assertionChange AssertionChange
+var subscriptionReady = make(chan bool, 1)
+
+//export subscriptionAction
+func subscriptionAction(actionCStr *C.char) {
+	action := C.GoString(actionCStr)
+	assertionChange.Action = action
+}
+
+//export subscriptionType
+func subscriptionType(typeCStr *C.char) {
+	subType := C.GoString(typeCStr)
+	assertionChange.Type = subType
+}
+
+//export subscriptionPid
+func subscriptionPid(pid int) {
+	assertionChange.Pid.PID = pid
+}
+
+//export subscriptionProcessName
+func subscriptionProcessName(processNameCStr *C.char) {
+	processName := C.GoString(processNameCStr)
+	assertionChange.Pid.Name = processName
+}
+
+//export assertionChangeReady
+func assertionChangeReady() {
+	subscriptionReady <- true
 }
