@@ -1,4 +1,4 @@
-package assertions
+package pmset
 
 import (
 	"encoding/json"

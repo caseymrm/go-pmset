@@ -1,4 +1,4 @@
-package assertions
+package pmset
 
 /*
 #cgo CFLAGS: -x objective-c

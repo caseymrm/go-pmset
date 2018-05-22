@@ -1,14 +1,14 @@
-# go-assertions
+# go-pmset
 Golang library to access OSX's system assertions, the ones displayed when you run `pmset -g assertions`
 
 ## Installation
-go-assertions requires OS X.
+go-pmset requires OS X.
 
-`go get github.com/caseymrm/go-assertions`
+`go get github.com/caseymrm/go-pmset`
 
 ## Documentation
 
-https://godoc.org/github.com/caseymrm/go-assertions
+https://godoc.org/github.com/caseymrm/go-pmset
 
 ## Examples
 
@@ -21,11 +21,11 @@ import (
     "encoding/json"
     "log"
     
-    "github.com/caseymrm/go-assertions"
+    "github.com/caseymrm/go-pmset"
 )
 
 func main() {
-    a := assertions.GetAssertions()
+    a := pmset.GetAssertions()
     b, _ := json.MarshalIndent(a, "", "  ")
     log.Printf("%s\n", b)
 }
@@ -66,11 +66,11 @@ import (
     "encoding/json"
     "log"
     
-    "github.com/caseymrm/go-assertions"
+    "github.com/caseymrm/go-pmset"
 )
 
 func main() {
-    a := assertions.GetPIDAssertions()
+    a := pmset.GetPIDAssertions()
     b, _ := json.MarshalIndent(a, "", "  ")
     log.Printf("%s\n", b)
 }
@@ -114,7 +114,7 @@ import (
     "encoding/json"
     "log"
     
-    "github.com/caseymrm/go-assertions"
+    "github.com/caseymrm/go-pmset"
 )
 
 func main() {
