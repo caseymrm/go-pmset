@@ -42,6 +42,8 @@ void startThermConditions();
 void thermCondition(const char *, int);
 void doneThermConditions();
 
+void thermChanged();
+
 void get_system_assertions()
 {
   startSystemAssertions();
@@ -277,7 +279,7 @@ void subscribe_assertions()
   }
 }
 
-void run_subscribed_assertions() { dispatch_main(); }
+void run_main_loop() { dispatch_main(); }
 
 void get_thermal_conditions()
 {
@@ -313,8 +315,8 @@ void get_thermal_conditions()
     goto exit;
   }
 
-  CFDictionaryGetKeysAndValues(cpuStatus,
-                               (const void **)keys, (const void **)vals);
+  CFDictionaryGetKeysAndValues(cpuStatus, (const void **)keys,
+                               (const void **)vals);
   for (i = 0; i < count; i++)
   {
     char strbuf[125];
@@ -333,4 +335,23 @@ exit:
   if (cpuStatus)
     CFRelease(cpuStatus);
   doneThermConditions();
+}
+
+void subscribe_thermal()
+{
+  int cpuPowerNotifyToken = 0;
+
+  uint32_t status;
+
+  status = notify_register_dispatch(kIOPMCPUPowerNotificationKey,
+                                    &cpuPowerNotifyToken,
+                                    dispatch_get_main_queue(), ^(int t) {
+                                      thermChanged();
+                                    });
+
+  if (NOTIFY_STATUS_OK != status)
+  {
+    fprintf(stderr, "Registration failed for \"%s\" with (%u)\n",
+            kIOPMCPUPowerNotificationKey, status);
+  }
 }

@@ -7,8 +7,9 @@ package pmset
 void get_system_assertions();
 void get_pid_assertions();
 void subscribe_assertions();
-void run_subscribed_assertions();
+void run_main_loop();
 void get_thermal_conditions();
+void subscribe_thermal();
 
 */
 import "C"
@@ -47,10 +48,10 @@ func GetPIDAssertions() map[string][]PidAssertion {
 // SubscribeAssertionChangesAndRun does not return, changes come through the supplied channel
 func SubscribeAssertionChangesAndRun(channel chan<- AssertionChange) {
 	SubscribeAssertionChanges(channel)
-	C.run_subscribed_assertions()
+	C.run_main_loop()
 }
 
-// SubscribeAssertionChanges return, changes come through the supplied channel once dispatch_main or nsapplication is run
+// SubscribeAssertionChanges returns, changes come through the supplied channel once dispatch_main or nsapplication is run
 func SubscribeAssertionChanges(channel chan<- AssertionChange) {
 	go func() {
 		for range subscriptionReady {
@@ -65,6 +66,22 @@ func GetThermalConditions() map[string]int {
 	C.get_thermal_conditions()
 	<-thermDone
 	return thermConditions
+}
+
+// SubscribeThermalChangesAndRun does not return, changes come through the supplied channel
+func SubscribeThermalChangesAndRun(channel chan<- bool) {
+	SubscribeThermalChanges(channel)
+	C.run_main_loop()
+}
+
+// SubscribeThermalChanges returns, changes come through the supplied channel once dispatch_main or nsapplication is run
+func SubscribeThermalChanges(channel chan<- bool) {
+	go func() {
+		for change := range thermalSubscription {
+			channel <- change
+		}
+	}()
+	C.subscribe_thermal()
 }
 
 var systemMutex = &sync.Mutex{}
@@ -178,4 +195,11 @@ func thermCondition(keyCStr *C.char, val int) {
 func doneThermConditions() {
 	thermMutex.Unlock()
 	thermDone <- true
+}
+
+var thermalSubscription = make(chan bool, 1)
+
+//export thermChanged
+func thermChanged() {
+	thermalSubscription <- true
 }

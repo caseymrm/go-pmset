@@ -42,3 +42,15 @@ func TestThermal(t *testing.T) {
 		t.Errorf("%s\n", b)
 	}
 }
+
+func TestThermalSubscription(t *testing.T) {
+	channel := make(chan bool)
+	go func() {
+		for range channel {
+			a := GetThermalConditions()
+			b, _ := json.MarshalIndent(a, "", "  ")
+			t.Errorf("%s\n", b)
+		}
+	}()
+	SubscribeThermalChangesAndRun(channel)
+}
