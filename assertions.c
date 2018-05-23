@@ -38,6 +38,10 @@ void subscriptionPid(int);
 void subscriptionProcessName(const char *);
 void assertionChangeReady();
 
+void startThermConditions();
+void thermCondition(const char *, int);
+void doneThermConditions();
+
 void get_system_assertions() {
   startSystemAssertions();
 
@@ -250,3 +254,106 @@ void subscribe_assertions() {
 }
 
 void run_subscribed_assertions() { dispatch_main(); }
+
+void get_thermal_conditions() {
+    CFDictionaryRef         cpuStatus;
+    CFStringRef             *keys = NULL;
+    CFNumberRef             *vals = NULL;
+    CFIndex                 count = 0;
+    int                     i;
+    IOReturn                ret;
+
+    startThermConditions();
+
+    ret = IOPMCopyCPUPowerStatus(&cpuStatus);
+
+    if (kIOReturnNotFound == ret) {
+        printf("Note: No CPU power status has been recorded\n");
+        return;
+    }
+
+    if (!cpuStatus || (kIOReturnSuccess != ret)) 
+    {
+        printf("Error: No CPU power status with error code 0x%08x\n", ret);
+        return;
+    }
+
+    count = CFDictionaryGetCount(cpuStatus);
+
+    keys = (CFStringRef *)malloc(count*sizeof(CFStringRef));
+    vals = (CFNumberRef *)malloc(count*sizeof(CFNumberRef));
+    if (!keys||!vals) {
+      goto exit;
+    }
+
+    CFDictionaryGetKeysAndValues(cpuStatus, 
+                    (const void **)keys, (const void **)vals);
+    for(i=0; i<count; i++) {
+        char strbuf[125];
+        int  valint;
+        
+        CFStringGetCString(keys[i], strbuf, 125, kCFStringEncodingUTF8);
+        CFNumberGetValue(vals[i], kCFNumberIntType, &valint);
+        thermCondition(strbuf, valint);
+    }
+
+exit:    
+    if (keys)
+        free(keys);
+    if (vals)
+        free(vals);
+    if (cpuStatus)
+        CFRelease(cpuStatus);
+    doneThermConditions();
+}
+
+void get_thermal_conditionsxxx() {
+     CFDictionaryRef         cpuStatus;
+    CFStringRef             *keys = NULL;
+    CFNumberRef             *vals = NULL;
+    int                     count = 0;
+    int                     i;
+    IOReturn                ret;
+
+    ret = IOPMCopyCPUPowerStatus(&cpuStatus);
+
+    if (kIOReturnNotFound == ret) {
+        printf("Note: No CPU power status has been recorded\n");
+        return;
+    }
+
+    if (!cpuStatus || (kIOReturnSuccess != ret)) 
+    {
+        printf("Error: No CPU power status with error code 0x%08x\n", ret);
+        return;
+    }
+
+    fprintf(stderr, "CPU Power notify\n"), fflush(stderr);        
+    
+    count = CFDictionaryGetCount(cpuStatus);
+    keys = (CFStringRef *)malloc(count*sizeof(CFStringRef));
+    vals = (CFNumberRef *)malloc(count*sizeof(CFNumberRef));
+    if (!keys||!vals) 
+        goto exit;
+
+    CFDictionaryGetKeysAndValues(cpuStatus, 
+                    (const void **)keys, (const void **)vals);
+
+    for(i=0; i<count; i++) {
+        char strbuf[125];
+        int  valint;
+        
+        CFStringGetCString(keys[i], strbuf, 125, kCFStringEncodingUTF8);
+        CFNumberGetValue(vals[i], kCFNumberIntType, &valint);
+        printf("\t%s \t= %d\n", strbuf, valint);
+    }
+
+
+exit:    
+    if (keys)
+        free(keys);
+    if (vals)
+        free(vals);
+    if (cpuStatus)
+CFRelease(cpuStatus);
+}

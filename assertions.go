@@ -8,6 +8,7 @@ void get_system_assertions();
 void get_pid_assertions();
 void subscribe_assertions();
 void run_subscribed_assertions();
+void get_thermal_conditions();
 
 */
 import "C"
@@ -57,6 +58,13 @@ func SubscribeAssertionChanges(channel chan<- AssertionChange) {
 		}
 	}()
 	C.subscribe_assertions()
+}
+
+// GetThermalConditions returns the current cpu limits
+func GetThermalConditions() map[string]int {
+	C.get_thermal_conditions()
+	<-thermDone
+	return thermConditions
 }
 
 var systemMutex = &sync.Mutex{}
@@ -148,4 +156,26 @@ func subscriptionProcessName(processNameCStr *C.char) {
 func assertionChangeReady() {
 	subscriptionReady <- true
 	subscriptionMutex.Unlock()
+}
+
+var thermMutex = &sync.Mutex{}
+var thermConditions map[string]int
+var thermDone = make(chan bool, 1)
+
+//export startThermConditions
+func startThermConditions() {
+	thermMutex.Lock()
+	thermConditions = make(map[string]int)
+}
+
+//export thermCondition
+func thermCondition(keyCStr *C.char, val int) {
+	key := C.GoString(keyCStr)
+	thermConditions[key] = val
+}
+
+//export doneThermConditions
+func doneThermConditions() {
+	thermMutex.Unlock()
+	thermDone <- true
 }

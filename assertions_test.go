@@ -33,3 +33,12 @@ func TestAssertionChanges(t *testing.T) {
 	}()
 	SubscribeAssertionChangesAndRun(channel)
 }
+
+func TestThermal(t *testing.T) {
+	a := GetThermalConditions()
+	b, _ := json.MarshalIndent(a, "", "  ")
+	_, ok := a["CPU_Speed_Limit"]
+	if !ok {
+		t.Errorf("%s\n", b)
+	}
+}
