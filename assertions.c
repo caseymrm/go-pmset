@@ -42,7 +42,8 @@ void startThermConditions();
 void thermCondition(const char *, int);
 void doneThermConditions();
 
-void get_system_assertions() {
+void get_system_assertions()
+{
   startSystemAssertions();
 
   CFStringRef *assertionNames = NULL;
@@ -55,14 +56,16 @@ void get_system_assertions() {
   int i;
 
   ret = IOPMCopyAssertionsStatus(&assertions_status);
-  if ((kIOReturnSuccess != ret) || (NULL == assertions_status)) {
+  if ((kIOReturnSuccess != ret) || (NULL == assertions_status))
+  {
     printf("No assertions.\n");
     doneSystemAssertions();
     return;
   }
 
   count = CFDictionaryGetCount(assertions_status);
-  if (0 == count) {
+  if (0 == count)
+  {
     doneSystemAssertions();
     return;
   }
@@ -72,7 +75,8 @@ void get_system_assertions() {
   CFDictionaryGetKeysAndValues(assertions_status, (const void **)assertionNames,
                                (const void **)assertionValues);
 
-  for (i = 0; i < count; i++) {
+  for (i = 0; i < count; i++)
+  {
     CFStringGetCString(assertionNames[i], name, 50, kCFStringEncodingMacRoman);
     CFNumberGetValue(assertionValues[i], kCFNumberIntType, &val);
     systemAssertion(name, val);
@@ -85,18 +89,21 @@ void get_system_assertions() {
 
 #define kIOPMAssertionTimedOutDateKey CFSTR("AssertTimedOutWhen")
 
-void get_pid_assertions() {
+void get_pid_assertions()
+{
   startPidAssertions();
 
   CFDictionaryRef assertions_info = NULL;
 
   IOReturn ret = IOPMCopyAssertionsByProcess(&assertions_info);
-  if (kIOReturnSuccess != ret) {
+  if (kIOReturnSuccess != ret)
+  {
     donePidAssertions();
     return;
   }
 
-  if (!assertions_info) {
+  if (!assertions_info)
+  {
     printf("No Assertions.\n");
     donePidAssertions();
     return;
@@ -113,13 +120,15 @@ void get_pid_assertions() {
   CFDictionaryGetKeysAndValues(assertions_info, (const void **)pids,
                                (const void **)assertions);
 
-  for (i = 0; i < process_count; i++) {
+  for (i = 0; i < process_count; i++)
+  {
     int the_pid;
     int j;
 
     CFNumberGetValue(pids[i], kCFNumberIntType, &the_pid);
 
-    for (j = 0; j < CFArrayGetCount(assertions[i]); j++) {
+    for (j = 0; j < CFArrayGetCount(assertions[i]); j++)
+    {
       CFDictionaryRef tmp_dict;
       CFStringRef tmp_type;
       CFNumberRef tmp_val;
@@ -130,7 +139,8 @@ void get_pid_assertions() {
       bool timed_out = false;
 
       tmp_dict = CFArrayGetValueAtIndex(assertions[i], j);
-      if (!tmp_dict) {
+      if (!tmp_dict)
+      {
         donePidAssertions();
         return;
       }
@@ -138,13 +148,15 @@ void get_pid_assertions() {
       tmp_val = CFDictionaryGetValue(tmp_dict, kIOPMAssertionLevelKey);
       the_name = CFDictionaryGetValue(tmp_dict, kIOPMAssertionNameKey);
       timed_out = CFDictionaryGetValue(tmp_dict, kIOPMAssertionTimedOutDateKey);
-      if (!tmp_type || !tmp_val) {
+      if (!tmp_type || !tmp_val)
+      {
         return;
       }
       CFStringGetCString(tmp_type, str_buf, 40, kCFStringEncodingMacRoman);
       CFNumberGetValue(tmp_val, kCFNumberIntType, &val);
 
-      if (the_name) {
+      if (the_name)
+      {
         CFStringGetCString(the_name, name_buf, 129, kCFStringEncodingMacRoman);
       }
 
@@ -159,7 +171,8 @@ void get_pid_assertions() {
   donePidAssertions();
 }
 
-static void get_new_activity() {
+static void get_new_activity()
+{
   int num;
   CFIndex cnt = 0;
   char str[200];
@@ -174,18 +187,22 @@ static void get_new_activity() {
   pid_t beneficiary;
 
   rc = IOPMCopyAssertionActivityUpdate(&log, &of, &refCnt);
-  if ((rc != kIOReturnSuccess) && (rc != kIOReturnNotFound)) {
+  if ((rc != kIOReturnSuccess) && (rc != kIOReturnNotFound))
+  {
     // TODO: some kind of error
     return;
   }
-  if (!log) {
+  if (!log)
+  {
     return;
   }
-  if (of) {
+  if (of)
+  {
     // TODO: indicate overflow, may have missed some
   }
   cnt = isA_CFArray(log) ? CFArrayGetCount(log) : 0;
-  for (int i = 0; i < cnt; i++) {
+  for (int i = 0; i < cnt; i++)
+  {
     entry = CFArrayGetValueAtIndex(log, i);
     if (entry == NULL)
       continue;
@@ -193,25 +210,29 @@ static void get_new_activity() {
     assertionChangeStart();
     str_cf = CFDictionaryGetValue(entry, kIOPMAssertionActivityAction);
     str[0] = 0;
-    if (isA_CFString(str_cf)) {
+    if (isA_CFString(str_cf))
+    {
       CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
       subscriptionAction(str);
     }
 
     str_cf = CFDictionaryGetValue(entry, kIOPMAssertionTypeKey);
     str[0] = 0;
-    if (isA_CFString(str_cf)) {
+    if (isA_CFString(str_cf))
+    {
       CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
       subscriptionType(str);
     }
 
     num_cf = CFDictionaryGetValue(entry, kIOPMAssertionPIDKey);
-    if (isA_CFNumber(num_cf)) {
+    if (isA_CFNumber(num_cf))
+    {
       CFNumberGetValue(num_cf, kCFNumberIntType, &num);
       subscriptionPid(num);
 
       num_cf = CFDictionaryGetValue(entry, kIOPMAssertionOnBehalfOfPID);
-      if (isA_CFNumber(num_cf)) {
+      if (isA_CFNumber(num_cf))
+      {
         CFNumberGetValue(num_cf, kCFNumberIntType, &beneficiary);
         // TODO: expose beneficiary to go
       }
@@ -219,7 +240,8 @@ static void get_new_activity() {
 
     str_cf = CFDictionaryGetValue(entry, kIOPMAssertionNameKey);
     str[0] = 0;
-    if (isA_CFString(str_cf)) {
+    if (isA_CFString(str_cf))
+    {
       CFStringGetCString(str_cf, str, sizeof(str), kCFStringEncodingMacRoman);
       subscriptionProcessName(str);
     }
@@ -233,7 +255,8 @@ exit:
     CFRelease(log);
 }
 
-void subscribe_assertions() {
+void subscribe_assertions()
+{
   int token;
   int notify_status;
 
@@ -246,7 +269,8 @@ void subscribe_assertions() {
                                  get_new_activity();
                                });
 
-  if (NOTIFY_STATUS_OK != notify_status) {
+  if (NOTIFY_STATUS_OK != notify_status)
+  {
     printf("Could not get notification for %s. Exiting.\n",
            kIOPMAssertionsAnyChangedNotifyString);
     return;
@@ -255,105 +279,58 @@ void subscribe_assertions() {
 
 void run_subscribed_assertions() { dispatch_main(); }
 
-void get_thermal_conditions() {
-    CFDictionaryRef         cpuStatus;
-    CFStringRef             *keys = NULL;
-    CFNumberRef             *vals = NULL;
-    CFIndex                 count = 0;
-    int                     i;
-    IOReturn                ret;
+void get_thermal_conditions()
+{
+  CFDictionaryRef cpuStatus;
+  CFStringRef *keys = NULL;
+  CFNumberRef *vals = NULL;
+  CFIndex count = 0;
+  int i;
+  IOReturn ret;
 
-    startThermConditions();
+  startThermConditions();
 
-    ret = IOPMCopyCPUPowerStatus(&cpuStatus);
+  ret = IOPMCopyCPUPowerStatus(&cpuStatus);
 
-    if (kIOReturnNotFound == ret) {
-        printf("Note: No CPU power status has been recorded\n");
-        return;
-    }
+  if (kIOReturnNotFound == ret)
+  {
+    printf("Note: No CPU power status has been recorded\n");
+    return;
+  }
 
-    if (!cpuStatus || (kIOReturnSuccess != ret)) 
-    {
-        printf("Error: No CPU power status with error code 0x%08x\n", ret);
-        return;
-    }
+  if (!cpuStatus || (kIOReturnSuccess != ret))
+  {
+    printf("Error: No CPU power status with error code 0x%08x\n", ret);
+    return;
+  }
 
-    count = CFDictionaryGetCount(cpuStatus);
+  count = CFDictionaryGetCount(cpuStatus);
 
-    keys = (CFStringRef *)malloc(count*sizeof(CFStringRef));
-    vals = (CFNumberRef *)malloc(count*sizeof(CFNumberRef));
-    if (!keys||!vals) {
-      goto exit;
-    }
+  keys = (CFStringRef *)malloc(count * sizeof(CFStringRef));
+  vals = (CFNumberRef *)malloc(count * sizeof(CFNumberRef));
+  if (!keys || !vals)
+  {
+    goto exit;
+  }
 
-    CFDictionaryGetKeysAndValues(cpuStatus, 
-                    (const void **)keys, (const void **)vals);
-    for(i=0; i<count; i++) {
-        char strbuf[125];
-        int  valint;
-        
-        CFStringGetCString(keys[i], strbuf, 125, kCFStringEncodingUTF8);
-        CFNumberGetValue(vals[i], kCFNumberIntType, &valint);
-        thermCondition(strbuf, valint);
-    }
+  CFDictionaryGetKeysAndValues(cpuStatus,
+                               (const void **)keys, (const void **)vals);
+  for (i = 0; i < count; i++)
+  {
+    char strbuf[125];
+    int valint;
 
-exit:    
-    if (keys)
-        free(keys);
-    if (vals)
-        free(vals);
-    if (cpuStatus)
-        CFRelease(cpuStatus);
-    doneThermConditions();
-}
+    CFStringGetCString(keys[i], strbuf, 125, kCFStringEncodingUTF8);
+    CFNumberGetValue(vals[i], kCFNumberIntType, &valint);
+    thermCondition(strbuf, valint);
+  }
 
-void get_thermal_conditionsxxx() {
-     CFDictionaryRef         cpuStatus;
-    CFStringRef             *keys = NULL;
-    CFNumberRef             *vals = NULL;
-    int                     count = 0;
-    int                     i;
-    IOReturn                ret;
-
-    ret = IOPMCopyCPUPowerStatus(&cpuStatus);
-
-    if (kIOReturnNotFound == ret) {
-        printf("Note: No CPU power status has been recorded\n");
-        return;
-    }
-
-    if (!cpuStatus || (kIOReturnSuccess != ret)) 
-    {
-        printf("Error: No CPU power status with error code 0x%08x\n", ret);
-        return;
-    }
-
-    fprintf(stderr, "CPU Power notify\n"), fflush(stderr);        
-    
-    count = CFDictionaryGetCount(cpuStatus);
-    keys = (CFStringRef *)malloc(count*sizeof(CFStringRef));
-    vals = (CFNumberRef *)malloc(count*sizeof(CFNumberRef));
-    if (!keys||!vals) 
-        goto exit;
-
-    CFDictionaryGetKeysAndValues(cpuStatus, 
-                    (const void **)keys, (const void **)vals);
-
-    for(i=0; i<count; i++) {
-        char strbuf[125];
-        int  valint;
-        
-        CFStringGetCString(keys[i], strbuf, 125, kCFStringEncodingUTF8);
-        CFNumberGetValue(vals[i], kCFNumberIntType, &valint);
-        printf("\t%s \t= %d\n", strbuf, valint);
-    }
-
-
-exit:    
-    if (keys)
-        free(keys);
-    if (vals)
-        free(vals);
-    if (cpuStatus)
-CFRelease(cpuStatus);
+exit:
+  if (keys)
+    free(keys);
+  if (vals)
+    free(vals);
+  if (cpuStatus)
+    CFRelease(cpuStatus);
+  doneThermConditions();
 }
